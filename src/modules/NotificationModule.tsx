@@ -160,8 +160,18 @@ const NotificationModule: React.FC<NotificationModuleProps> = () => {
       const now = new Date();
       
       for (const notification of scheduled) {
-        if (notification.timestamp <= now && !notification.isRead) {
-          showInAppNotification(notification);
+        if (notification.timestamp <= now && notification.isActive) {
+          // Transform ScheduledNotification to Notification
+          const transformedNotification: Notification = {
+            id: notification.id,
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            priority: notification.priority,
+            timestamp: notification.timestamp,
+            isRead: false,
+          };
+          showInAppNotification(transformedNotification);
         }
       }
     } catch (error) {
