@@ -31,7 +31,7 @@ const EmotionRecognitionModule: React.FC<EmotionRecognitionModuleProps> = ({
   const cameraRef = useRef<Camera>(null);
   
   const devices = useCameraDevices();
-  const device = devices.front;
+  const device = devices.find((d) => d.position === 'front');
 
   useEffect(() => {
     checkCameraPermission();
@@ -51,9 +51,9 @@ const EmotionRecognitionModule: React.FC<EmotionRecognitionModuleProps> = ({
       
       if (cameraPermission === 'not-determined') {
         const newPermission = await Camera.requestCameraPermission();
-        setHasPermission(newPermission === 'authorized');
+        setHasPermission(newPermission === 'granted');
       } else {
-        setHasPermission(cameraPermission === 'authorized');
+        setHasPermission(cameraPermission === 'granted');
       }
     } catch (error) {
       console.error('Error checking camera permission:', error);
@@ -113,7 +113,6 @@ const EmotionRecognitionModule: React.FC<EmotionRecognitionModuleProps> = ({
         // you would use react-native-vision-camera's frame processor
         // or take a photo and process it
         const photo = await cameraRef.current.takePhoto({
-          qualityPrioritization: 'speed',
           flash: 'off',
           enableAutoRedEyeReduction: false,
         });

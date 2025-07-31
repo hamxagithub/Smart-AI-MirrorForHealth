@@ -11,7 +11,9 @@ import {
   Animated,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from 'react-native';
+
 import PushNotification from 'react-native-push-notification';
 import * as Animatable from 'react-native-animatable';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -125,7 +127,7 @@ const NotificationModule: React.FC<NotificationModuleProps> = () => {
         channelName: 'Emergency Alerts',
         channelDescription: 'Critical health alerts',
         soundName: 'default',
-        importance: 5,
+        importance: 4, // HIGH
         vibrate: true,
       },
       (created) => console.log(`Emergency channel created: ${created}`)
@@ -135,7 +137,18 @@ const NotificationModule: React.FC<NotificationModuleProps> = () => {
   const loadPendingNotifications = async () => {
     try {
       const pending = await NotificationService.getPendingNotifications();
-      setNotifications(pending);
+      // Map ScheduledNotification[] to Notification[]
+      const mappedPending: Notification[] = pending.map((notif: any) => ({
+        id: notif.id,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type || 'wellness',
+        priority: notif.priority || 'medium',
+        timestamp: notif.timestamp ? new Date(notif.timestamp) : new Date(),
+        actions: notif.actions,
+        isRead: notif.isRead ?? false,
+      }));
+      setNotifications(mappedPending);
     } catch (error) {
       console.error('Error loading pending notifications:', error);
     }

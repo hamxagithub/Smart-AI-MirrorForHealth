@@ -281,7 +281,6 @@ const styles = StyleSheet.create({
   mirrorOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    backdropFilter: 'blur(0.5px)',
   },
   content: {
     flex: 1,

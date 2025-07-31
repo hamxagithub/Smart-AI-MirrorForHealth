@@ -344,8 +344,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderLeftWidth: 4,
     marginBottom: 20,
-    backdropFilter: 'blur(10px)',
   },
+affirmationLabel:{
+     height: 6 , 
+     width : 6
+},
+actionLabel:
+{ height: 6 , 
+     width : 6
+
+},
+nextButtonText:{
+
+}
+,
   mainMessage: {
     fontSize: 18,
     color: '#FFFFFF',
@@ -353,18 +365,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+ 
   affirmationCard: {
     padding: 20,
     borderRadius: 16,
     marginBottom: 20,
-    backdropFilter: 'blur(10px)',
-  },
-  affirmationLabel: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    marginBottom: 8,
-    opacity: 0.8,
   },
   affirmationText: {
     fontSize: 16,
@@ -375,12 +380,6 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 20,
-    borderRadius: 16,
-    backdropFilter: 'blur(10px)',
-  },
-  actionLabel: {
-    fontSize: 14,
     color: '#FFFFFF',
     fontWeight: 'bold',
     marginBottom: 8,
@@ -418,6 +417,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
+
   nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -425,13 +425,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 25,
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    backdropFilter: 'blur(10px)',
   },
-  nextButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 6,
-  },
+  
   secondaryControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
