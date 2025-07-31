@@ -1,21 +1,28 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
+ * Moodify Mirror - AI-powered Smart Mirror for Wellness & Mental Health
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
+import React from 'react';
 import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import MoodifyMirrorApp from './src/MoodifyMirrorApp';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <NewAppScreen templateFileName="App.tsx" />
-    </View>
+    <GestureHandlerRootView style={styles.container}>
+      <View style={styles.container}>
+        <StatusBar 
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
+          backgroundColor="transparent"
+          translucent
+        />
+        <MoodifyMirrorApp/>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
