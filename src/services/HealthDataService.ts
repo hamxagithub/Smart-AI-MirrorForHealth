@@ -670,4 +670,133 @@ export class HealthDataService {
     
     return Math.max(0, Math.min(100, Math.round(score)));
   }
+
+  static async getCurrentMetrics(): Promise<any> {
+    try {
+      // Get latest metrics for each type
+      const currentMetrics: any = {};
+      
+      // Get heart rate from last 1 day
+      const heartRateMetrics = await this.getHealthMetrics('heart_rate', 1);
+      if (heartRateMetrics.length > 0) {
+        const latest = heartRateMetrics[heartRateMetrics.length - 1];
+        currentMetrics.heartRate = typeof latest.value === 'number' ? latest.value : 72;
+      }
+      
+      // Get blood pressure
+      const bpMetrics = await this.getHealthMetrics('blood_pressure', 1);
+      if (bpMetrics.length > 0) {
+        const latest = bpMetrics[bpMetrics.length - 1];
+        if (typeof latest.value === 'object' && 'systolic' in latest.value) {
+          currentMetrics.bloodPressure = latest.value;
+        }
+      }
+      
+      // Get temperature
+      const tempMetrics = await this.getHealthMetrics('temperature', 1);
+      if (tempMetrics.length > 0) {
+        const latest = tempMetrics[tempMetrics.length - 1];
+        currentMetrics.temperature = typeof latest.value === 'number' ? latest.value : 36.5;
+      }
+      
+      // Get oxygen saturation (simulated since we don't have actual sensors)
+      currentMetrics.oxygenSaturation = 98;
+      
+      // Get mood score
+      const moodMetrics = await this.getHealthMetrics('mood', 1);
+      if (moodMetrics.length > 0) {
+        const latest = moodMetrics[moodMetrics.length - 1];
+        currentMetrics.moodScore = typeof latest.value === 'number' ? latest.value : 3;
+      }
+      
+      return currentMetrics;
+    } catch (error) {
+      console.error('Error getting current metrics:', error);
+      return {};
+    }
+  }
+
+  static async getWeeklyStats(): Promise<any> {
+    try {
+      const weeklyStats: any = {};
+      
+      // Get average steps for the week
+      const stepsMetrics = await this.getHealthMetrics('steps', 7);
+      if (stepsMetrics.length > 0) {
+        const totalSteps = stepsMetrics.reduce((sum, metric) => {
+          return sum + (typeof metric.value === 'number' ? metric.value : 0);
+        }, 0);
+        weeklyStats.averageSteps = Math.round(totalSteps / 7);
+      } else {
+        weeklyStats.averageSteps = 8500; // Default value
+      }
+      
+      // Get average sleep
+      const sleepMetrics = await this.getHealthMetrics('sleep', 7);
+      if (sleepMetrics.length > 0) {
+        const totalSleep = sleepMetrics.reduce((sum, metric) => {
+          return sum + (typeof metric.value === 'number' ? metric.value : 0);
+        }, 0);
+        weeklyStats.averageSleep = `${(totalSleep / sleepMetrics.length).toFixed(1)}h`;
+      } else {
+        weeklyStats.averageSleep = '7.5h'; // Default value
+      }
+      
+      // Calculate mood stability
+      const moodMetrics = await this.getHealthMetrics('mood', 7);
+      if (moodMetrics.length > 1) {
+        const moodValues = moodMetrics.map(m => typeof m.value === 'number' ? m.value : 3);
+        const mean = moodValues.reduce((sum, val) => sum + val, 0) / moodValues.length;
+        const variance = moodValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / moodValues.length;
+        const stability = Math.max(0, 1 - (variance / 10)); // Normalize to 0-1
+        weeklyStats.moodStability = stability;
+      } else {
+        weeklyStats.moodStability = 0.7; // Default stability
+      }
+      
+      // Get emotion distribution
+      const emotionCounts: { [key: string]: number } = {};
+      const emotionMetrics = await this.getHealthMetrics('mood', 7);
+      
+      emotionMetrics.forEach(metric => {
+        const emotion = metric.notes || 'neutral';
+        emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
+      });
+      
+      weeklyStats.emotionDistribution = Object.entries(emotionCounts).map(([emotion, count]) => ({
+        emotion,
+        count,
+      }));
+      
+      return weeklyStats;
+    } catch (error) {
+      console.error('Error getting weekly stats:', error);
+      return {
+        averageSteps: 8500,
+        averageSleep: '7.5h',
+        moodStability: 0.7,
+        emotionDistribution: [],
+      };
+    }
+  }
+
+  static async recordMoodEntry(moodData: {
+    emotion: string;
+    score: number;
+    timestamp: Date;
+  }): Promise<void> {
+    try {
+      await this.recordHealthMetric(
+        'mood',
+        moodData.score,
+        'score',
+        'manual',
+        moodData.emotion,
+        ['emotion', 'mood_tracking']
+      );
+    } catch (error) {
+      console.error('Error recording mood entry:', error);
+      throw error;
+    }
+  }
 }

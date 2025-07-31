@@ -357,7 +357,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 16,
     padding: 16,
-    backdropFilter: 'blur(10px)',
   },
   timeframeSelectorContainer: {
     flexDirection: 'row',
