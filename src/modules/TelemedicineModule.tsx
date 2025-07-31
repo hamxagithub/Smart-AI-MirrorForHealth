@@ -92,7 +92,7 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
 
   const checkForEmergencyTriggers = async () => {
     try {
-      const emergencyDetected = await TelemedicineService.checkEmergencyTriggers();
+      const emergencyDetected: boolean = await TelemedicineService.checkEmergencyTriggers();
       if (emergencyDetected && !emergencyTriggered) {
         setEmergencyTriggered(true);
         handleEmergencyTrigger();

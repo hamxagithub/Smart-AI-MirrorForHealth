@@ -55,7 +55,7 @@ interface EmergencyContact {
   id: string;
   name: string;
   relationship: string;
-  phone: string;
+  phoneNumber: string;
   email?: string;
   isHealthcareProvider: boolean;
   priority: number; // 1 = highest priority
@@ -569,6 +569,258 @@ export class TelemedicineService {
     } catch (error) {
       console.error('Error getting provider availability:', error);
       return [];
+    }
+  }
+
+  static async getAvailableProviders(): Promise<HealthcareProvider[]> {
+    try {
+      const providers = await this.getHealthcareProviders();
+      return providers.filter(p => p.isAvailable);
+    } catch (error) {
+      console.error('Error getting available providers:', error);
+      return [];
+    }
+  }
+
+  static async checkEmergencyTriggers(): Promise<boolean> {
+    try {
+      // In a real implementation, this would check various health metrics
+      // and patterns to determine if emergency intervention is needed
+      
+      // Mock emergency detection logic
+      const healthMetrics = await this.getCurrentHealthMetrics();
+      
+      // Check for critical vital signs
+      if (healthMetrics.heartRate > 120 || healthMetrics.heartRate < 50) {
+        return true;
+      }
+      
+      if (healthMetrics.bloodPressure.systolic > 180 || healthMetrics.bloodPressure.systolic < 90) {
+        return true;
+      }
+      
+      // Check for emergency keywords in recent interactions
+      const recentNotes = await this.getRecentPatientNotes();
+      const emergencyKeywords = ['emergency', 'urgent', 'chest pain', 'difficulty breathing', 'severe pain'];
+      
+      for (const note of recentNotes) {
+        for (const keyword of emergencyKeywords) {
+          if (note.toLowerCase().includes(keyword)) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking emergency triggers:', error);
+      return false;
+    }
+  }
+
+  static async initiateCall(providerId: string, type: Appointment['type']): Promise<VideoCallSession> {
+    try {
+      const provider = await this.getProvider(providerId);
+      if (!provider) {
+        throw new Error('Provider not found');
+      }
+
+      if (!provider.isAvailable) {
+        throw new Error('Provider is not available');
+      }
+
+      const callSession: VideoCallSession = {
+        id: Date.now().toString(),
+        appointmentId: '', // Will be set if this is for a scheduled appointment
+        startTime: new Date(),
+        participants: [providerId, 'patient'],
+        status: 'waiting',
+        quality: 'excellent',
+        issues: [],
+      };
+
+      // Save the call session
+      await this.saveCallSession(callSession);
+      
+      // In a real implementation, this would initiate the actual video call
+      console.log(`Initiating ${type} call with provider ${provider.name}`);
+      
+      return callSession;
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      throw error;
+    }
+  }
+
+  static async callEmergencyServices(): Promise<void> {
+    try {
+      // In a real implementation, this would:
+      // 1. Contact emergency services (911)
+      // 2. Send location data
+      // 3. Provide medical history summary
+      // 4. Notify emergency contacts
+      
+      console.log('Calling emergency services...');
+      
+      // Notify emergency contacts
+      const emergencyContacts = await this.getEmergencyContacts();
+      for (const contact of emergencyContacts) {
+        await this.notifyEmergencyContact(contact, 'Emergency call initiated');
+      }
+      
+      // Log the emergency call
+      await this.logEmergencyCall();
+      
+    } catch (error) {
+      console.error('Error calling emergency services:', error);
+      throw error;
+    }
+  }
+
+  static async endCall(callId: string): Promise<void> {
+    try {
+      const callSession = await this.getCallSession(callId);
+      if (!callSession) {
+        throw new Error('Call session not found');
+      }
+
+      callSession.endTime = new Date();
+      callSession.status = 'ended';
+      
+      await this.updateCallSession(callSession);
+      
+      console.log(`Call ${callId} ended`);
+    } catch (error) {
+      console.error('Error ending call:', error);
+      throw error;
+    }
+  }
+
+  static async sendHealthSummary(providerId: string): Promise<void> {
+    try {
+      const provider = await this.getProvider(providerId);
+      if (!provider) {
+        throw new Error('Provider not found');
+      }
+
+      // Gather health data summary
+      const healthSummary = await this.generateHealthSummary();
+      
+      // In a real implementation, this would send the summary via secure channels
+      console.log(`Sending health summary to ${provider.name}:`, healthSummary);
+      
+      // Log the transmission
+      await this.logHealthSummaryTransmission(providerId, healthSummary);
+      
+    } catch (error) {
+      console.error('Error sending health summary:', error);
+      throw error;
+    }
+  }
+
+  // Helper methods
+  private static async getCurrentHealthMetrics(): Promise<any> {
+    // Mock health metrics
+    return {
+      heartRate: 72,
+      bloodPressure: { systolic: 120, diastolic: 80 },
+      temperature: 98.6,
+      oxygenSaturation: 98,
+    };
+  }
+
+  private static async getRecentPatientNotes(): Promise<string[]> {
+    // Mock patient notes
+    return [
+      'Patient reports feeling well today',
+      'Completed medication as prescribed',
+      'No adverse symptoms reported',
+    ];
+  }
+
+  private static async saveCallSession(session: VideoCallSession): Promise<void> {
+    try {
+      const sessions = await StorageService.getItem<VideoCallSession[]>('call_sessions') || [];
+      sessions.push(session);
+      await StorageService.setItem('call_sessions', sessions);
+    } catch (error) {
+      console.error('Error saving call session:', error);
+    }
+  }
+
+  private static async getCallSession(callId: string): Promise<VideoCallSession | null> {
+    try {
+      const sessions = await StorageService.getItem<VideoCallSession[]>('call_sessions') || [];
+      return sessions.find(s => s.id === callId) || null;
+    } catch (error) {
+      console.error('Error getting call session:', error);
+      return null;
+    }
+  }
+
+  private static async updateCallSession(session: VideoCallSession): Promise<void> {
+    try {
+      const sessions = await StorageService.getItem<VideoCallSession[]>('call_sessions') || [];
+      const index = sessions.findIndex(s => s.id === session.id);
+      if (index !== -1) {
+        sessions[index] = session;
+        await StorageService.setItem('call_sessions', sessions);
+      }
+    } catch (error) {
+      console.error('Error updating call session:', error);
+    }
+  }
+
+  private static async notifyEmergencyContact(contact: EmergencyContact, message: string): Promise<void> {
+    try {
+      // In a real implementation, this would send SMS, email, or push notification
+      console.log(`Notifying emergency contact ${contact.name}: ${message}`);
+    } catch (error) {
+      console.error('Error notifying emergency contact:', error);
+    }
+  }
+
+  private static async logEmergencyCall(): Promise<void> {
+    try {
+      const logs = await StorageService.getItem<any[]>('emergency_logs') || [];
+      logs.push({
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        type: 'emergency_call',
+        details: 'Emergency services contacted via smart mirror',
+      });
+      await StorageService.setItem('emergency_logs', logs);
+    } catch (error) {
+      console.error('Error logging emergency call:', error);
+    }
+  }
+
+  private static async generateHealthSummary(): Promise<any> {
+    // Mock health summary
+    return {
+      patientId: 'patient_001',
+      timestamp: new Date(),
+      vitals: await this.getCurrentHealthMetrics(),
+      medications: ['Medication A', 'Medication B'],
+      recentSymptoms: [],
+      moodTrend: 'stable',
+      alerts: [],
+    };
+  }
+
+  private static async logHealthSummaryTransmission(providerId: string, summary: any): Promise<void> {
+    try {
+      const logs = await StorageService.getItem<any[]>('health_summary_logs') || [];
+      logs.push({
+        id: Date.now().toString(),
+        timestamp: new Date(),
+        providerId,
+        summaryId: summary.timestamp,
+        type: 'health_summary_transmission',
+      });
+      await StorageService.setItem('health_summary_logs', logs);
+    } catch (error) {
+      console.error('Error logging health summary transmission:', error);
     }
   }
 }

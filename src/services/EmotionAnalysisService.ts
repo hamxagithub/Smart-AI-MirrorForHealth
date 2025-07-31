@@ -5,8 +5,15 @@
 
 import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-react-native';
-import '@tensorflow/tfjs-platform-react-native';
+import '@tensorflow/tfjs-backend-cpu';
+import { Platform } from 'react-native';
 import { StorageService } from './StorageService';
+
+// Initialize TensorFlow.js platform for React Native
+if (Platform.OS !== 'web') {
+  // Platform is automatically initialized by importing @tensorflow/tfjs-react-native
+  // and @tensorflow/tfjs-backend-cpu
+}
 
 interface EmotionResult {
   emotion: string;
