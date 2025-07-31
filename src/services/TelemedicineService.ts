@@ -488,6 +488,7 @@ export class TelemedicineService {
         scheduledTime: reminderTime,
         repeatType: undefined,
         isActive: true,
+        timestamp: new Date()
       });
     } catch (error) {
       console.error('Error scheduling appointment reminder:', error);

@@ -7,6 +7,7 @@ import PushNotification from 'react-native-push-notification';
 import { StorageService } from './StorageService';
 
 interface ScheduledNotification {
+  timestamp: Date;
   id: string;
   title: string;
   message: string;
@@ -146,6 +147,7 @@ export class NotificationService {
       scheduledTime: time,
       repeatType: repeatDaily ? 'day' : undefined,
       isActive: true,
+      timestamp: new Date()
     });
   }
 
@@ -158,6 +160,7 @@ export class NotificationService {
       scheduledTime: time,
       repeatType: 'day',
       isActive: true,
+      timestamp: new Date()
     });
   }
 
@@ -170,6 +173,7 @@ export class NotificationService {
       scheduledTime: time,
       repeatType: 'day',
       isActive: true,
+      timestamp: new Date()
     });
   }
 
@@ -188,6 +192,7 @@ export class NotificationService {
       scheduledTime: reminderTime,
       repeatType: undefined,
       isActive: true,
+      timestamp: new Date()
     });
   }
 

@@ -8,3 +8,29 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+# React Native
+-keep class com.facebook.react.** { *; }
+-keep class com.facebook.react.views.** { *; }
+-keep class com.facebook.react.uimanager.** { *; }
+-keep class com.facebook.react.viewmanagers.** { *; }
+
+# React Native Vector Icons
+-keep class com.oblador.vectoricons.** { *; }
+
+# React Native SVG
+-keep class com.horcrux.svg.** { *; }
+
+# React Native Reanimated
+-keep class com.swmansion.reanimated.** { *; }
+
+# React Native Gesture Handler
+-keep class com.swmansion.gesturehandler.** { *; }
+
+# React Native Linear Gradient
+-keep class com.BV.LinearGradient.** { *; }
+
+# Keep ViewManager classes
+-keep class **.*ViewManager { *; }
+-keep class **.*Manager { *; }
+-keep class **.*Package { *; }
