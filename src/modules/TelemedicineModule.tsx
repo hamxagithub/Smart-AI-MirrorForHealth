@@ -75,7 +75,12 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
   const loadProviders = async () => {
     try {
       const providerList = await TelemedicineService.getAvailableProviders();
-      setProviders(providerList);
+      // Transform the service data to match the module interface
+      const transformedProviders = providerList.map(provider => ({
+        ...provider,
+        avatar: provider.avatar || '', // Ensure avatar is never undefined
+      }));
+      setProviders(transformedProviders);
     } catch (error) {
       console.error('Error loading providers:', error);
     }
@@ -84,7 +89,16 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
   const loadEmergencyContacts = async () => {
     try {
       const contacts = await TelemedicineService.getEmergencyContacts();
-      setEmergencyContacts(contacts);
+      // Transform the service data to match the module interface
+      const transformedContacts = contacts.map(contact => ({
+        id: contact.id,
+        name: contact.name,
+        relationship: contact.relationship,
+        phone: contact.phoneNumber || '', // Map phoneNumber to phone
+        priority: contact.priority,
+        avatar: '', // Service doesn't have avatar, set default
+      }));
+      setEmergencyContacts(transformedContacts);
     } catch (error) {
       console.error('Error loading emergency contacts:', error);
     }
@@ -135,7 +149,11 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
         return;
       }
 
-      const callSession = await TelemedicineService.initiateCall(providerId, type);
+      // Map the call types to service types
+      const serviceType = type === 'healthcare' ? 'consultation' : 
+                         type === 'caregiver' ? 'routine_check' : 'emergency';
+      
+      const callSession = await TelemedicineService.initiateCall(providerId, serviceType);
       
       setCurrentCall({
         id: callSession.id,
@@ -185,14 +203,25 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
 
   const scheduleAppointment = async (providerId: string) => {
     try {
-      const success = await TelemedicineService.scheduleAppointment(providerId);
-      if (success) {
+      // Schedule for tomorrow at 2 PM as default
+      const scheduledTime = new Date();
+      scheduledTime.setDate(scheduledTime.getDate() + 1);
+      scheduledTime.setHours(14, 0, 0, 0);
+      
+      const appointmentId = await TelemedicineService.scheduleAppointment(
+        providerId, 
+        scheduledTime, 
+        'consultation'
+      );
+      
+      if (appointmentId) {
         Alert.alert('Success', 'Appointment scheduled successfully');
       } else {
         Alert.alert('Error', 'Failed to schedule appointment');
       }
     } catch (error) {
       console.error('Error scheduling appointment:', error);
+      Alert.alert('Error', 'Failed to schedule appointment');
     }
   };
 
@@ -382,12 +411,22 @@ const TelemedicineModule: React.FC<TelemedicineModuleProps> = () => {
         onRequestClose={() => setShowEmergencyModal(false)}
       >
         <EmergencyContactList
-          contacts={emergencyContacts}
-          onContactCall={(contactId: string) => {
-            initiateCall(contactId, 'emergency');
-            setShowEmergencyModal(false);
+          contacts={emergencyContacts.map(contact => ({
+            id: contact.id,
+            name: contact.name,
+            relationship: contact.relationship,
+            phoneNumber: contact.phone, // Map phone to phoneNumber
+            avatar: contact.avatar,
+            isPrimary: contact.priority === 1,
+          }))}
+          onEditContact={(contactId: string) => {
+            // Handle edit contact
+            console.log('Edit contact:', contactId);
           }}
-          onClose={() => setShowEmergencyModal(false)}
+          onAddContact={() => {
+            // Handle add contact
+            console.log('Add contact');
+          }}
         />
       </Modal>
     </>

@@ -482,4 +482,81 @@ export class CaregiverService {
       return [];
     }
   }
+
+  static async notifyMedicationDue(medication: any): Promise<void> {
+    try {
+      await this.sendAlert(
+        'medication_missed',
+        'Medication Reminder',
+        `Time to take ${medication.name} (${medication.dosage})`,
+        'medium',
+        { medicationId: medication.id, medication }
+      );
+    } catch (error) {
+      console.error('Error notifying medication due:', error);
+    }
+  }
+
+  static async notifyMedicationSkipped(medicationId: string, reason: string): Promise<void> {
+    try {
+      await this.sendAlert(
+        'medication_missed',
+        'Medication Skipped',
+        `Medication was skipped. Reason: ${reason}`,
+        'medium',
+        { medicationId, reason }
+      );
+    } catch (error) {
+      console.error('Error notifying medication skipped:', error);
+    }
+  }
+
+  static async checkAndNotifyHealthConcerns(data: any): Promise<void> {
+    try {
+      const concerns: string[] = [];
+      
+      // Check for concerning health data
+      if (data.painLevel && data.painLevel > 7) {
+        concerns.push(`High pain level reported: ${data.painLevel}/10`);
+      }
+      
+      if (data.overallFeeling === 'poor') {
+        concerns.push('Patient reported feeling poor overall');
+      }
+      
+      if (data.symptoms && data.symptoms.length > 3) {
+        concerns.push(`Multiple symptoms reported: ${data.symptoms.join(', ')}`);
+      }
+      
+      // Check vital signs if available
+      if (data.vitalSigns) {
+        const vitals = data.vitalSigns;
+        
+        if (vitals.heartRate && (vitals.heartRate.bpm > 120 || vitals.heartRate.bpm < 50)) {
+          concerns.push(`Abnormal heart rate: ${vitals.heartRate.bpm} BPM`);
+        }
+        
+        if (vitals.bloodPressure && (vitals.bloodPressure.systolic > 180 || vitals.bloodPressure.diastolic > 110)) {
+          concerns.push(`High blood pressure: ${vitals.bloodPressure.systolic}/${vitals.bloodPressure.diastolic}`);
+        }
+        
+        if (vitals.temperature && vitals.temperature.value > 101) {
+          concerns.push(`Elevated temperature: ${vitals.temperature.value}°${vitals.temperature.unit}`);
+        }
+      }
+      
+      // Send alerts for each concern
+      for (const concern of concerns) {
+        await this.sendAlert(
+          'health_concern',
+          'Health Concern Detected',
+          concern,
+          concerns.length > 2 ? 'high' : 'medium',
+          data
+        );
+      }
+    } catch (error) {
+      console.error('Error checking and notifying health concerns:', error);
+    }
+  }
 }

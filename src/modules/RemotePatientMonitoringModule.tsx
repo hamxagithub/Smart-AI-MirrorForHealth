@@ -176,6 +176,20 @@ const RemotePatientMonitoringModule: React.FC<RemotePatientMonitoringModuleProps
     }
   };
 
+  const transformMedicationForComponent = (med: Medication) => {
+    return {
+      id: med.id,
+      name: med.name,
+      dosage: med.dosage,
+      time: med.nextDose.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+      }),
+      taken: med.taken,
+    };
+  };
+
   const getMetricStatusColor = (status: string): string => {
     switch (status) {
       case 'normal':
@@ -252,28 +266,25 @@ const RemotePatientMonitoringModule: React.FC<RemotePatientMonitoringModuleProps
       {/* Medication Reminder Modal */}
       {showMedicationReminder && currentReminder && (
         <MedicationReminder
-          medication={currentReminder}
-          onTaken={handleMedicationTaken}
-          onSkipped={handleMedicationSkipped}
-          onClose={() => setShowMedicationReminder(false)}
+          medications={[transformMedicationForComponent(currentReminder)]}
+          onMedicationTaken={handleMedicationTaken}
+          onMedicationSkipped={handleMedicationSkipped}
         />
       )}
 
       {/* Health Check-in Modal */}
       {showHealthCheckIn && (
         <HealthCheckIn
-          onComplete={handleHealthCheckComplete}
-          onClose={() => setShowHealthCheckIn(false)}
+          onCheckInComplete={handleHealthCheckComplete}
         />
       )}
 
       {/* Vital Signs Monitor */}
       <VitalSignsMonitor
-        isActive={isActive}
-        onVitalSigns={(vitals) => {
-          // Handle real-time vital signs if available
-          console.log('Vital signs updated:', vitals);
+        onRefresh={() => {
+          loadHealthMetrics();
         }}
+        isLoading={false}
       />
     </View>
   );
@@ -288,7 +299,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 16,
     padding: 16,
-    backdropFilter: 'blur(10px)',
   },
   statusBar: {
     flexDirection: 'row',

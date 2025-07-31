@@ -605,4 +605,252 @@ export class HealthCheckService {
       return 5;
     }
   }
+
+  static async getTodaysMetrics(): Promise<HealthMetric[]> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const checkIns = await this.getHealthHistory(1); // Get today's data
+      const todaysCheckIns = checkIns.filter((checkIn: HealthCheckIn) => {
+        const checkInDate = new Date(checkIn.timestamp);
+        checkInDate.setHours(0, 0, 0, 0);
+        return checkInDate.getTime() === today.getTime();
+      });
+
+      const metrics: HealthMetric[] = [];
+
+      // Extract vital signs from today's check-ins
+      for (const checkIn of todaysCheckIns) {
+        if (checkIn.vitalSigns) {
+          const vitals = checkIn.vitalSigns;
+          
+          if (vitals.heartRate) {
+            metrics.push({
+              type: 'Heart Rate',
+              value: vitals.heartRate.bpm,
+              unit: 'bpm',
+              timestamp: vitals.heartRate.timestamp,
+              status: this.getHeartRateStatus(vitals.heartRate.bpm)
+            });
+          }
+
+          if (vitals.bloodPressure) {
+            metrics.push({
+              type: 'Blood Pressure',
+              value: vitals.bloodPressure.systolic,
+              unit: 'mmHg',
+              timestamp: vitals.bloodPressure.timestamp,
+              status: this.getBloodPressureStatus(vitals.bloodPressure.systolic, vitals.bloodPressure.diastolic)
+            });
+          }
+
+          if (vitals.temperature) {
+            metrics.push({
+              type: 'Temperature',
+              value: vitals.temperature.value,
+              unit: vitals.temperature.unit,
+              timestamp: vitals.temperature.timestamp,
+              status: this.getTemperatureStatus(vitals.temperature.value, vitals.temperature.unit)
+            });
+          }
+
+          if (vitals.oxygenSaturation) {
+            metrics.push({
+              type: 'Oxygen Saturation',
+              value: vitals.oxygenSaturation.percentage,
+              unit: '%',
+              timestamp: vitals.oxygenSaturation.timestamp,
+              status: this.getOxygenSaturationStatus(vitals.oxygenSaturation.percentage)
+            });
+          }
+        }
+      }
+
+      return metrics;
+    } catch (error) {
+      console.error('Error getting today\'s metrics:', error);
+      return [];
+    }
+  }
+
+  static async isDailyCheckCompleted(): Promise<boolean> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const checkIns = await this.getHealthHistory(1); // Get today's data
+      const todaysCheckIns = checkIns.filter((checkIn: HealthCheckIn) => {
+        const checkInDate = new Date(checkIn.timestamp);
+        checkInDate.setHours(0, 0, 0, 0);
+        return checkInDate.getTime() === today.getTime();
+      });
+
+      // Check if there's at least one daily check-in today
+      return todaysCheckIns.some((checkIn: HealthCheckIn) => checkIn.type === 'daily');
+    } catch (error) {
+      console.error('Error checking daily check completion:', error);
+      return false;
+    }
+  }
+
+  static async recordDailyCheck(data: any): Promise<void> {
+    try {
+      // Create a basic daily check-in and then update it with the detailed data
+      const checkInId = await this.createHealthCheckIn('daily', data.vitalSigns);
+      
+      // Store additional data
+      const checkIns = await StorageService.getItem<HealthCheckIn[]>('health_checkins') || [];
+      const checkInIndex = checkIns.findIndex(c => c.id === checkInId);
+      
+      if (checkInIndex !== -1) {
+        checkIns[checkInIndex].notes = data.notes || '';
+        checkIns[checkInIndex].flagged = this.shouldFlag(data);
+        checkIns[checkInIndex].overallScore = this.calculateDailyScore(data);
+        
+        // Add custom responses
+        const customResponses = this.convertDataToResponses(data);
+        checkIns[checkInIndex].responses.push(...customResponses);
+        
+        await StorageService.setItem('health_checkins', checkIns);
+      }
+    } catch (error) {
+      console.error('Error recording daily check:', error);
+      throw error;
+    }
+  }
+
+  // Helper methods for metrics status
+  private static getHeartRateStatus(bpm: number): 'normal' | 'warning' | 'critical' {
+    if (bpm < 60 || bpm > 100) return 'warning';
+    if (bpm < 40 || bpm > 120) return 'critical';
+    return 'normal';
+  }
+
+  private static getBloodPressureStatus(systolic: number, diastolic: number): 'normal' | 'warning' | 'critical' {
+    if (systolic > 140 || diastolic > 90) return 'warning';
+    if (systolic > 180 || diastolic > 110) return 'critical';
+    if (systolic < 90 || diastolic < 60) return 'warning';
+    return 'normal';
+  }
+
+  private static getTemperatureStatus(temp: number, unit: 'F' | 'C'): 'normal' | 'warning' | 'critical' {
+    const fahrenheit = unit === 'C' ? (temp * 9/5) + 32 : temp;
+    if (fahrenheit > 100.4) return 'warning';
+    if (fahrenheit > 103) return 'critical';
+    if (fahrenheit < 96) return 'warning';
+    return 'normal';
+  }
+
+  private static getOxygenSaturationStatus(percentage: number): 'normal' | 'warning' | 'critical' {
+    if (percentage < 95) return 'warning';
+    if (percentage < 90) return 'critical';
+    return 'normal';
+  }
+
+  private static generateDailyQuestions(): HealthQuestion[] {
+    return [
+      {
+        id: 'overall_feeling',
+        question: 'How are you feeling overall today?',
+        type: 'scale',
+        required: true,
+        category: 'general',
+      },
+      {
+        id: 'pain_level',
+        question: 'What is your pain level today?',
+        type: 'scale',
+        required: true,
+        category: 'pain',
+      },
+      {
+        id: 'energy_level',
+        question: 'How is your energy level today?',
+        type: 'scale',
+        required: true,
+        category: 'energy',
+      },
+    ];
+  }
+
+  private static convertDataToResponses(data: any): HealthResponse[] {
+    const responses: HealthResponse[] = [];
+    
+    if (data.overallFeeling) {
+      responses.push({
+        questionId: 'overall_feeling',
+        value: data.overallFeeling,
+        timestamp: new Date(),
+      });
+    }
+
+    if (data.painLevel !== undefined) {
+      responses.push({
+        questionId: 'pain_level',
+        value: data.painLevel,
+        timestamp: new Date(),
+      });
+    }
+
+    if (data.energyLevel !== undefined) {
+      responses.push({
+        questionId: 'energy_level',
+        value: data.energyLevel,
+        timestamp: new Date(),
+      });
+    }
+
+    return responses;
+  }
+
+  private static calculateDailyScore(data: any): number {
+    let totalScore = 0;
+    let factorCount = 0;
+
+    if (data.overallFeeling) {
+      const feelingScore = this.convertFeelingToNumber(data.overallFeeling);
+      totalScore += feelingScore;
+      factorCount++;
+    }
+
+    if (data.painLevel !== undefined) {
+      // Invert pain level (0 pain = 10 score, 10 pain = 0 score)
+      totalScore += (10 - data.painLevel);
+      factorCount++;
+    }
+
+    if (data.energyLevel !== undefined) {
+      totalScore += data.energyLevel;
+      factorCount++;
+    }
+
+    return factorCount > 0 ? Math.round(totalScore / factorCount) : 5;
+  }
+
+  private static convertFeelingToNumber(feeling: string): number {
+    const feelingMap: { [key: string]: number } = {
+      'excellent': 10,
+      'good': 8,
+      'fair': 6,
+      'poor': 4,
+    };
+    return feelingMap[feeling] || 5;
+  }
+
+  private static shouldFlag(data: any): boolean {
+    // Flag if pain level is high or overall feeling is poor
+    if (data.painLevel && data.painLevel > 7) return true;
+    if (data.overallFeeling === 'poor') return true;
+    if (data.symptoms && data.symptoms.length > 3) return true;
+    return false;
+  }
+}
+
+interface HealthMetric {
+  type: string;
+  value: number;
+  unit: string;
+  timestamp: Date;
+  status: 'normal' | 'warning' | 'critical';
 }

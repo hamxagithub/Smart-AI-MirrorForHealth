@@ -332,7 +332,7 @@ export class TelemedicineService {
       );
 
       // In a real implementation, this would initiate actual call
-      console.log(`Initiating emergency call to ${primaryContact.name}: ${primaryContact.phone}`);
+      console.log(`Initiating emergency call to ${primaryContact.name}: ${primaryContact.phoneNumber}`);
       
     } catch (error) {
       console.error('Error initiating emergency call:', error);
