@@ -14,10 +14,15 @@ class MainApplication : Application(), ReactApplication {
 
   override val reactNativeHost: ReactNativeHost =
       object : DefaultReactNativeHost(this) {
-        override fun getPackages(): List<ReactPackage> =
-            PackageList(this).packages.apply {
-              // Let autolinking handle all packages
-            }
+        override fun getPackages(): List<ReactPackage> {
+          // Use PackageList to get auto-linked packages
+          val packages = PackageList(this).packages.toMutableList()
+          
+          // Add any additional packages that need manual linking here
+          // packages.add(MyReactNativePackage())
+          
+          return packages
+        }
 
         override fun getJSMainModuleName(): String = "index"
 
