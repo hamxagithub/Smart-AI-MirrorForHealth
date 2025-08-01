@@ -56,7 +56,9 @@ const MoodifyMirrorApp: React.FC<MoodifyMirrorAppProps> = () => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+ 
 
+  
   const initializeApp = async () => {
     try {
       // Request permissions
